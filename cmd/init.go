@@ -1,8 +1,12 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
 	"os"
+
+	config "github.com/leigme/search/config"
+	logger "github.com/leigme/search/logger"
+	"github.com/spf13/cobra"
+	"golang.org/x/exp/slog"
 )
 
 var initCmd = &cobra.Command{
@@ -10,12 +14,12 @@ var initCmd = &cobra.Command{
 	Short: "",
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
-		os.Remove(configPath())
-		initConfig()
-		bytes, err := os.ReadFile(configPath())
+		os.Remove(config.ConfigPath())
+		config.InitConfig()
+		bytes, err := os.ReadFile(config.ConfigPath())
 		if err != nil {
-			Fatalln(err)
+			logger.Fatalln(err)
 		}
-		Out(string(bytes))
+		slog.Info(string(bytes))
 	},
 }
