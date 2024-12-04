@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/leigme/search/model"
 	homedir "github.com/mitchellh/go-homedir"
@@ -28,6 +27,7 @@ func ConfigPath() string {
 }
 
 func InitConfig() {
+	os.RemoveAll(ConfigPath())
 	err := os.MkdirAll(filepath.Join(homeDir(), workDir), os.ModePerm)
 	if err != nil {
 		log.Fatalln(err)
@@ -36,10 +36,13 @@ func InitConfig() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	SaveConfig()
+	cfg := model.Config{
+		Path: ConfigPath(),
+	}
+	SaveConfig(cfg)
 }
 
-func LoadConfig(cfg *model.Config) {
+func LoadConfig(cfg model.Config) {
 	_, err := os.Stat(ConfigPath())
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -51,23 +54,14 @@ func LoadConfig(cfg *model.Config) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	err = json.Unmarshal(data, &model.Local)
+	err = json.Unmarshal(data, &cfg)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	if !strings.EqualFold(cfg.Path, "") {
-		model.Local.Path = cfg.Path
-	}
-	if !strings.EqualFold(cfg.LogPath, "") {
-		model.Local.LogPath = cfg.LogPath
-	}
-	if !strings.EqualFold(cfg.LogLevel, "") {
-		model.Local.LogLevel = cfg.LogLevel
-	}
 }
 
-func SaveConfig() {
-	bytes, err := json.Marshal(model.Local)
+func SaveConfig(cfg model.Config) {
+	bytes, err := json.Marshal(&cfg)
 	if err != nil {
 		log.Fatalln(err)
 	}

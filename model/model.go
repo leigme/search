@@ -13,6 +13,13 @@ type Config struct {
 	LogLevel string `json:"log_level"`
 }
 
+type Param struct {
+	Key    string `json:"key"`
+	File   string `json:"file"`
+	Clip   string `json:"clip"`
+	Config Config `json:"config"`
+}
+
 func (c *Config) GetLogLevel() slog.Level {
 	switch strings.ToLower(c.LogLevel) {
 	case "debug":

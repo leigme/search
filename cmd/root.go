@@ -10,13 +10,15 @@ import (
 	"strings"
 
 	config "github.com/leigme/search/config"
-	logger "github.com/leigme/search/logger"
 	model "github.com/leigme/search/model"
 	util "github.com/leigme/search/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.design/x/clipboard"
 )
+
+var param model.Param
+var cfg model.Config
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -29,9 +31,18 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if result, err := search(args...); err == nil {
+		if strings.EqualFold(param.Key, "") {
+			fmt.Println("search key is nil")
+			return
+		}
+		if !strings.EqualFold(param.File, "") {
+			cfg.Path = param.File
+		}
+		keys := strings.Split(param.Key, ",")
+		if result, err := search(keys...); err == nil {
 			out(result)
 		}
+		config.SaveConfig(cfg)
 	},
 }
 
@@ -45,23 +56,25 @@ func Execute() {
 }
 
 func init() {
-	cfg := model.Config{}
-	bingArgs(&cfg)
-	config.LoadConfig(&cfg)
-	logger.InitLogger(&model.Local)
-	rootCmd.AddCommand(initCmd, configCmd)
-	config.SaveConfig()
+	param = model.Param{}
+	bingArgs(param)
+	cfg = model.Config{}
+	config.LoadConfig(cfg)
+	rootCmd.AddCommand(initCmd, setCmd, versionCmd)
 }
 
-func bingArgs(cfg *model.Config) {
-	rootCmd.PersistentFlags().StringVar(&cfg.Path, "path", "", "config file path (default is $HOME/.search/config.json)")
-	rootCmd.PersistentFlags().StringVar(&cfg.LogPath, "log", "", "config file path (default is $HOME/.search/config.json)")
-	rootCmd.PersistentFlags().StringVar(&cfg.LogLevel, "level", "", "")
+func bingArgs(param model.Param) {
+	rootCmd.Flags().StringVar(&param.Key, "key", "", "")
+	rootCmd.Flags().StringVar(&param.File, "file", "", "search file absolute path")
+	rootCmd.Flags().StringVar(&param.Clip, "clip", "", "search clipboard content")
+	setCmd.Flags().StringVar(&param.Config.Path, "path", "", "config path (default path: $HOME/.search/config.json)")
+	setCmd.Flags().StringVar(&param.Config.LogPath, "log", "", "")
+	setCmd.Flags().StringVar(&param.Config.LogLevel, "level", "", "")
 }
 
 func search(keys ...string) ([]string, error) {
 	result := make([]string, 0)
-	suffix := filepath.Base(config.ConfigPath())
+	suffix := filepath.Base(cfg.Path)
 	var configType string
 	switch suffix {
 	case "json":
@@ -71,11 +84,12 @@ func search(keys ...string) ([]string, error) {
 	case "yaml":
 		configType = "yaml"
 	case "yml":
-		configType = "yml"
+		configType = "yaml"
 	default:
 		return nil, fmt.Errorf("config: [%s] format nonsupport", suffix)
 	}
 	viper.SetConfigType(configType)
+	viper.SetConfigFile(cfg.Path)
 	viper.ReadInConfig()
 	for _, key := range keys {
 		for _, k := range viper.AllKeys() {
