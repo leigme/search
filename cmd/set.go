@@ -17,7 +17,7 @@ var setCmd = &cobra.Command{
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := model.Config{}
-		if bytes, err := os.ReadFile(config.ConfigPath()); err == nil {
+		if bytes, err := os.ReadFile(config.DefaultConfigPath()); err == nil {
 			err = json.Unmarshal(bytes, &cfg)
 			if err != nil {
 				logger.Fatalln(err)
@@ -33,7 +33,7 @@ var setCmd = &cobra.Command{
 			cfg.LogLevel = param.Config.LogLevel
 		}
 		if bytes, err := json.Marshal(cfg); err == nil {
-			err = os.WriteFile(config.ConfigPath(), bytes, os.ModePerm)
+			err = os.WriteFile(config.DefaultConfigPath(), bytes, os.ModePerm)
 			if err != nil {
 				logger.Fatalln(err)
 			}

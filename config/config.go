@@ -22,50 +22,52 @@ func homeDir() string {
 	return home
 }
 
-func ConfigPath() string {
+func DefaultConfigPath() string {
 	return filepath.Join(homeDir(), workDir, configName)
 }
 
 func InitConfig() {
-	os.RemoveAll(ConfigPath())
+	if err := os.RemoveAll(DefaultConfigPath()); err != nil {
+		log.Println(err)
+	}
 	err := os.MkdirAll(filepath.Join(homeDir(), workDir), os.ModePerm)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	_, err = os.Create(ConfigPath())
+	_, err = os.Create(DefaultConfigPath())
 	if err != nil {
 		log.Fatalln(err)
 	}
 	cfg := model.Config{
-		Path: ConfigPath(),
+		Path: DefaultConfigPath(),
 	}
-	SaveConfig(cfg)
+	SaveConfig(&cfg)
 }
 
-func LoadConfig(cfg model.Config) {
-	_, err := os.Stat(ConfigPath())
+func LoadConfig(cfg *model.Config) {
+	_, err := os.Stat(DefaultConfigPath())
 	if err != nil {
 		if !os.IsNotExist(err) {
 			log.Fatalln(err)
 		}
 		InitConfig()
 	}
-	data, err := os.ReadFile(ConfigPath())
+	data, err := os.ReadFile(DefaultConfigPath())
 	if err != nil {
 		log.Fatalln(err)
 	}
-	err = json.Unmarshal(data, &cfg)
+	err = json.Unmarshal(data, cfg)
 	if err != nil {
 		log.Fatalln(err)
 	}
 }
 
-func SaveConfig(cfg model.Config) {
-	bytes, err := json.Marshal(&cfg)
+func SaveConfig(cfg *model.Config) {
+	bytes, err := json.Marshal(cfg)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	err = os.WriteFile(ConfigPath(), bytes, os.ModePerm)
+	err = os.WriteFile(DefaultConfigPath(), bytes, os.ModePerm)
 	if err != nil {
 		log.Fatalln(err)
 	}

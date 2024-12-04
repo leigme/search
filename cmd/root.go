@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"golang.design/x/clipboard"
 	"log"
 	"path/filepath"
 	"strings"
@@ -14,7 +15,6 @@ import (
 	util "github.com/leigme/search/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.design/x/clipboard"
 )
 
 var param model.Param
@@ -31,18 +31,18 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if strings.EqualFold(param.Key, "") {
+		if strings.EqualFold(param.Keys, "") {
 			fmt.Println("search key is nil")
 			return
 		}
 		if !strings.EqualFold(param.File, "") {
 			cfg.Path = param.File
 		}
-		keys := strings.Split(param.Key, ",")
+		keys := strings.Split(param.Keys, ",")
 		if result, err := search(keys...); err == nil {
 			out(result)
 		}
-		config.SaveConfig(cfg)
+		config.SaveConfig(&cfg)
 	},
 }
 
@@ -57,14 +57,19 @@ func Execute() {
 
 func init() {
 	param = model.Param{}
-	bingArgs(param)
+	bingArgs(&param)
 	cfg = model.Config{}
-	config.LoadConfig(cfg)
+	config.LoadConfig(&cfg)
+	if util.IsLinux() {
+		if err := clipboard.Init(); err != nil {
+			log.Fatalln(err)
+		}
+	}
 	rootCmd.AddCommand(initCmd, setCmd, versionCmd)
 }
 
-func bingArgs(param model.Param) {
-	rootCmd.Flags().StringVar(&param.Key, "key", "", "")
+func bingArgs(param *model.Param) {
+	rootCmd.Flags().StringVar(&param.Keys, "keys", "", "")
 	rootCmd.Flags().StringVar(&param.File, "file", "", "search file absolute path")
 	rootCmd.Flags().StringVar(&param.Clip, "clip", "", "search clipboard content")
 	setCmd.Flags().StringVar(&param.Config.Path, "path", "", "config path (default path: $HOME/.search/config.json)")
@@ -74,23 +79,25 @@ func bingArgs(param model.Param) {
 
 func search(keys ...string) ([]string, error) {
 	result := make([]string, 0)
-	suffix := filepath.Base(cfg.Path)
+	suffix := filepath.Ext(cfg.Path)
 	var configType string
 	switch suffix {
-	case "json":
+	case ".json":
 		configType = "json"
-	case "ini":
+	case ".ini":
 		configType = "ini"
-	case "yaml":
+	case ".yaml":
 		configType = "yaml"
-	case "yml":
+	case ".yml":
 		configType = "yaml"
 	default:
 		return nil, fmt.Errorf("config: [%s] format nonsupport", suffix)
 	}
 	viper.SetConfigType(configType)
 	viper.SetConfigFile(cfg.Path)
-	viper.ReadInConfig()
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalln(err)
+	}
 	for _, key := range keys {
 		for _, k := range viper.AllKeys() {
 			if strings.HasSuffix(k, key) {
@@ -103,12 +110,16 @@ func search(keys ...string) ([]string, error) {
 
 func out(a ...any) {
 	content := fmt.Sprintln(a...)
-	clipboard.Write(clipboard.FmtText, []byte(content))
+	if util.IsLinux() {
+		clipboard.Write(clipboard.FmtText, []byte(content))
+	}
 	fmt.Println(content)
 }
 
 func outf(format string, a ...any) {
 	content := fmt.Sprintf(format, a...)
-	clipboard.Write(clipboard.FmtText, []byte(content))
+	if util.IsLinux() {
+		clipboard.Write(clipboard.FmtText, []byte(content))
+	}
 	fmt.Println(content)
 }

@@ -14,7 +14,7 @@ type Config struct {
 }
 
 type Param struct {
-	Key    string `json:"key"`
+	Keys   string `json:"keys"`
 	File   string `json:"file"`
 	Clip   string `json:"clip"`
 	Config Config `json:"config"`

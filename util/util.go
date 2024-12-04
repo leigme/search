@@ -1,6 +1,9 @@
 package util
 
-import "cmp"
+import (
+	"cmp"
+	"runtime"
+)
 
 func Unique[T cmp.Ordered](ss []T) []T {
 	size := len(ss)
@@ -16,4 +19,8 @@ func Unique[T cmp.Ordered](ss []T) []T {
 		}
 	}
 	return newSlices
+}
+
+func IsLinux() bool {
+	return runtime.GOOS == "linux"
 }

@@ -13,7 +13,7 @@ var versionCmd = &cobra.Command{
 	Short: "show app version and config content",
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
-		if bytes, err := os.ReadFile(config.ConfigPath()); err == nil {
+		if bytes, err := os.ReadFile(config.DefaultConfigPath()); err == nil {
 			fmt.Println(string(bytes))
 		}
 	},
