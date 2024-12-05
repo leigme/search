@@ -14,7 +14,11 @@ var versionCmd = &cobra.Command{
 	Long:  "",
 	Run: func(cmd *cobra.Command, args []string) {
 		if bytes, err := os.ReadFile(config.DefaultConfigPath()); err == nil {
-			fmt.Println(string(bytes))
+			fmt.Printf(format, "v1.0.2", config.DefaultConfigPath(), string(bytes))
 		}
 	},
 }
+
+const format string = `version: %s\n
+config path: %s\n
+`
