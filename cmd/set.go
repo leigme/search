@@ -23,6 +23,9 @@ var setCmd = &cobra.Command{
 				logger.Fatalln(err)
 			}
 		}
+		if !strings.EqualFold(param.Config.ValueSplit, "") {
+			cfg.ValueSplit = param.Config.ValueSplit
+		}
 		if !strings.EqualFold(param.Config.Path, "") {
 			cfg.Path = param.Config.Path
 		}

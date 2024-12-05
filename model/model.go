@@ -8,9 +8,10 @@ import (
 var Local Config
 
 type Config struct {
-	Path     string `json:"path"`
-	LogPath  string `json:"log_path"`
-	LogLevel string `json:"log_level"`
+	Path       string `json:"path"`
+	ValueSplit string `json:"value_split"`
+	LogPath    string `json:"log_path"`
+	LogLevel   string `json:"log_level"`
 }
 
 type Param struct {

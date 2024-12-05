@@ -72,6 +72,7 @@ func bingArgs(param *model.Param) {
 	rootCmd.Flags().StringVar(&param.Keys, "keys", "", "")
 	rootCmd.Flags().StringVar(&param.File, "file", "", "search file absolute path")
 	rootCmd.Flags().StringVar(&param.Clip, "clip", "", "search clipboard content")
+	setCmd.Flags().StringVar(&param.Config.ValueSplit, "vs", "", "value split")
 	setCmd.Flags().StringVar(&param.Config.Path, "path", "", "config path (default path: $HOME/.search/config.json)")
 	setCmd.Flags().StringVar(&param.Config.LogPath, "log", "", "")
 	setCmd.Flags().StringVar(&param.Config.LogLevel, "level", "", "")
@@ -101,7 +102,12 @@ func search(keys ...string) ([]string, error) {
 	for _, key := range keys {
 		for _, k := range viper.AllKeys() {
 			if strings.HasSuffix(k, key) {
-				result = append(result, viper.GetString(k))
+				if strings.EqualFold(cfg.ValueSplit, "") {
+					result = append(result, viper.GetString(k))
+				} else {
+					values := strings.Split(viper.GetString(k), cfg.ValueSplit)
+					result = append(result, values...)
+				}
 			}
 		}
 	}
