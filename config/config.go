@@ -1,74 +1,124 @@
 package config
 
 import (
+	"bufio"
 	"encoding/json"
+	"errors"
 	"log"
 	"os"
 	"path/filepath"
-
-	"github.com/leigme/search/model"
-	homedir "github.com/mitchellh/go-homedir"
+	"strings"
 )
 
-const workDir = ".search"
+const configName = "conf.json"
 
-const configName = "config.json"
+type Json struct {
+	Files []File `json:"files"`
+}
 
-func homeDir() string {
-	home, err := homedir.Dir()
+type File struct {
+	Path string `json:"path"`
+	Type string `json:"type"`
+}
+
+func NewJson() *Json {
+	return &Json{}
+}
+
+func (j *Json) Load() {
+	checkDir(Path())
+	data := readFile(Path())
+	err := json.Unmarshal(data, j)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	return home
 }
 
-func DefaultConfigPath() string {
-	return filepath.Join(homeDir(), workDir, configName)
-}
-
-func InitConfig() {
-	if err := os.RemoveAll(DefaultConfigPath()); err != nil {
-		log.Println(err)
-	}
-	err := os.MkdirAll(filepath.Join(homeDir(), workDir), os.ModePerm)
+func (j *Json) Update() {
+	checkDir(Path())
+	data, err := json.Marshal(j)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	_, err = os.Create(DefaultConfigPath())
+	writeFile(data, Path())
+}
+
+func checkDir(path string) {
+	_, err := os.Stat(path)
+	if err != nil && os.IsNotExist(err) {
+		err = os.MkdirAll(filepath.Dir(path), os.ModePerm)
+	}
 	if err != nil {
 		log.Fatalln(err)
 	}
-	cfg := model.Config{
-		Path: DefaultConfigPath(),
-	}
-	SaveConfig(&cfg)
 }
 
-func LoadConfig(cfg *model.Config) {
-	_, err := os.Stat(DefaultConfigPath())
-	if err != nil {
-		if !os.IsNotExist(err) {
+func readFile(path string) []byte {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
+	defer func() {
+		if err := f.Close(); err != nil {
 			log.Fatalln(err)
 		}
-		InitConfig()
-	}
-	data, err := os.ReadFile(DefaultConfigPath())
+	}()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	err = json.Unmarshal(data, cfg)
+	stat, err := f.Stat()
 	if err != nil {
+		log.Fatalln(err)
+	}
+	bs := make([]byte, stat.Size())
+	_, err = bufio.NewReader(f).Read(bs)
+	return bs
+}
+
+func writeFile(data []byte, path string) {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Fatalln(err)
+		}
+	}()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	w := bufio.NewWriter(f)
+	_, err = w.Write(data)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	if err = w.Flush(); err != nil {
 		log.Fatalln(err)
 	}
 }
 
-func SaveConfig(cfg *model.Config) {
-	bytes, err := json.Marshal(cfg)
+func (j *Json) AddByType(p, t string) {
+	if j.Files == nil {
+		j.Files = make([]File, 0)
+	}
+	j.Files = append(j.Files, File{p, t})
+}
+
+func (j *Json) Add(path string) {
+	ext := filepath.Ext(path)
+	if strings.EqualFold(ext, "") {
+		log.Fatalln(path, errors.New("The file name has no suffix"))
+	}
+	j.AddByType(path, ext)
+}
+
+func Dir() string {
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	err = os.WriteFile(DefaultConfigPath(), bytes, os.ModePerm)
+	executable, err := os.Executable()
 	if err != nil {
 		log.Fatalln(err)
 	}
+	return filepath.Join(homeDir, ".config", executable)
+}
+
+func Path() string {
+	return filepath.Join(Dir(), "conf.json")
 }
