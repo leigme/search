@@ -26,11 +26,14 @@ func NewJson() *Json {
 }
 
 func (j *Json) Load() {
+	log.Println(Path())
 	checkDir(Path())
 	data := readFile(Path())
-	err := json.Unmarshal(data, j)
-	if err != nil {
-		log.Fatalln(err)
+	if len(data) > 0 {
+		err := json.Unmarshal(data, j)
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 }
 
@@ -104,7 +107,7 @@ func (j *Json) Add(path string) {
 	if strings.EqualFold(ext, "") {
 		log.Fatalln(path, errors.New("The file name has no suffix"))
 	}
-	j.AddByType(path, ext)
+	j.AddByType(path, ext[1:])
 }
 
 func Dir() string {
@@ -116,7 +119,7 @@ func Dir() string {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	return filepath.Join(homeDir, ".config", executable)
+	return filepath.Join(homeDir, ".config", filepath.Base(executable))
 }
 
 func Path() string {
