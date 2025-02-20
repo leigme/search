@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -26,7 +27,6 @@ func NewJson() *Json {
 }
 
 func (j *Json) Load() {
-	log.Println(Path())
 	checkDir(Path())
 	data := readFile(Path())
 	if len(data) > 0 {
@@ -57,22 +57,20 @@ func checkDir(path string) {
 }
 
 func readFile(path string) []byte {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
+	f, err := os.Open(path)
+	if err != nil {
+		log.Fatalln(err)
+	}
 	defer func() {
 		if err := f.Close(); err != nil {
 			log.Fatalln(err)
 		}
 	}()
+	data, err := io.ReadAll(f)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	stat, err := f.Stat()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	bs := make([]byte, stat.Size())
-	_, err = bufio.NewReader(f).Read(bs)
-	return bs
+	return data
 }
 
 func writeFile(data []byte, path string) {

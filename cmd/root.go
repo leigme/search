@@ -33,7 +33,6 @@ var rootCmd = &cobra.Command{
 			log.Fatalln(errors.New("--k can not nil"))
 		}
 		cfg.Load()
-		log.Println(cfg)
 		if strings.EqualFold(path, "") {
 			if len(cfg.Files) == 0 {
 				log.Fatalln(errors.New("--p can not nil"))
