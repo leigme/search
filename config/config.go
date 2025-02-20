@@ -49,7 +49,9 @@ func (j *Json) Update() {
 func checkDir(path string) {
 	_, err := os.Stat(path)
 	if err != nil && os.IsNotExist(err) {
-		err = os.MkdirAll(filepath.Dir(path), os.ModePerm)
+		if err = os.MkdirAll(filepath.Dir(path), os.ModePerm); err == nil {
+			_, err = os.Create(path)
+		}
 	}
 	if err != nil {
 		log.Fatalln(err)
@@ -96,6 +98,11 @@ func writeFile(data []byte, path string) {
 func (j *Json) AddByType(p, t string) {
 	if j.Files == nil {
 		j.Files = make([]File, 0)
+	}
+	for _, f := range j.Files {
+		if strings.EqualFold(p, f.Path) {
+			return
+		}
 	}
 	j.Files = append(j.Files, File{p, t})
 }
